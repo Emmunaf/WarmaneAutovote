@@ -147,7 +147,7 @@ def long_to_bytes(n):
 def reverse(s):
     """ Reverse a byte string, used to convert endian notation"""
     
-    return s[::-1]
+    return bytes_to_long(long_to_bytes(s)[::-1])
     
 
 def get_random( nbytes ):

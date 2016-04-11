@@ -1,4 +1,7 @@
 #!/usr/bin/python
+# Thanks: Glusk for the GREAT help
+#       karapidiola for the base script
+
 from socket import *
 import hashlib
 from time import *
@@ -10,6 +13,23 @@ except:
     print "Need py_srp"
     exit(1)
 
+def generate_K(S):
+    """Generate K from S with SHA1 Interleaved"""
+
+
+    s_bytes = srp.long_to_bytes(S)
+    # Hash the odd bytes of S (session key)
+    hash_object = hashlib.sha1(s_bytes[::2])
+    odd_hashed = hash_object.digest()
+    # Hash the even bytes of S
+    hash_object = hashlib.sha1(s_bytes[1::2])
+    even_hashed = hash_object.digest()
+    K = ""
+    for o, e in zip(odd_hashed, even_hashed):
+        K += o + e  # K = odd[0],even[0],odd[1],..
+
+    return K    
+
 
 class Mpacket:
     def hex_print(self, data):
@@ -20,8 +40,8 @@ class Mpacket:
 
     def LoginPacket(self, username):
 
-        packet = "\x00"  # Opcode
-        packet += "\x08"  # da wireshark 
+        packet = "\x00"  # Opcode (Auth Logon Challenge)
+        packet += "\x08"  # (Error) da wireshark 
         packet += chr(30 + len(username))
         packet += "\x00\x57\x6f\x57\x00"  # Game name: <WoW>
         packet += "\x03\x03\x05"  # Version[1,2,3]: <335>
@@ -31,8 +51,8 @@ class Mpacket:
         packet += "\x53\x55\x6e\x65"  # Country: <enUS>
         packet += "\x3c\x00\x00\x00"  # Timezone bias: <60>
         packet += "\xc0\xa8\x01\x02"  # IP address: <192.168.1.2> #?? Need real local one, or is it the same?
-        packet += chr(len(username))
-        packet += username.upper()
+        packet += chr(len(username))  # SRP I length
+        packet += username.upper()    # SRP I value
         # packet_size = 29 #+
         return packet
 
@@ -84,6 +104,7 @@ X = Mpacket()
 host = "54.213.244.47"
 port = 3724
 
+# Login data
 user = "alexlorens".upper()
 pass_ = "lolloasd".upper()
 
@@ -96,34 +117,32 @@ sck.send(X.LoginPacket(user))
 SRP_ARRAY = X.RecvedData(sck.recv(1024))
 ############################################################################
 g = srp.bytes_to_long(SRP_ARRAY[1])
-#g = srp.bytes_to_long("\x07")
 N = srp.bytes_to_long(SRP_ARRAY[2])
-#N = srp.bytes_to_long("\xb7\x9b\x3e\x2a\x87\x82\x3c\xab\x8f\x5e\xbf\xbf\x8e\xb1\x01\x08\x53\x50\x06\x29\x8b\x5b\xad\xbd\x5b\x53\xe1\x89\x5e\x64\x4b\x89")
 hash_class = srp._hash_map[srp.SHA1]
 
-#k =  srp.H(hash_class, N, g)
-k = 3
+#k =  srp.H(hash_class, N, g)  # SRP-6A
+k = 3  # SRP-6
 I = user
 p = pass_
 a = srp.get_random(32)
-A = pow(g, a, N)
+A = srp.reverse(pow(srp.reverse(g), srp.reverse(a), srp.reverse(N)))  # Big endian
 v = None
 M = None
 K = None
 H_AMK = None
 s = srp.bytes_to_long(SRP_ARRAY[3])
-#s = srp.bytes_to_long("\x2d\xc6\xb5\xfc\x0c\xae\x6f\x0b\x26\x2f\x10\x2c\xce\xe3\x91\x0c\x34\x87\x56\x0f\x19\x0e\x8b\x41\x9d\xee\x93\x67\x9b\x6b\x30\x8d")
 B = srp.bytes_to_long(SRP_ARRAY[0])
-#B = srp.bytes_to_long("\x2b\x39\x9c\xdd\x64\xb5\xa8\x17\x7f\x40\x32\xef\x0b\x07\xd5\x84\xe2\xb6\x3e\x49\x63\x04\xfe\x14\x0e\x95\xd7\x52\x67\xf7\xd7\x30")
 # _authenticated = False
 if (B % N) == 0:
     print "Error"
 u = srp.H(hash_class, A, B)
 x = srp.gen_x(hash_class, s, I, p)##
-v = pow(srp.reverse(g), srp.reverse(x), srp.reverse(N))
-S = pow((B - k * v), a + u * x, N)
+v = srp.reverse(pow(srp.reverse(g), srp.reverse(x), srp.reverse(N)))  #  Big endian 
+S = srp.reverse(pow((srp.reverse(B) - srp.reverse(k) * srp.reverse(v)),
+    srp.reverse(a) + srp.reverse(u) * srp.reverse(x), srp.reverse(N)))  # Big endian
 #print("S: ", S)
-K = hash_class(srp.long_to_bytes(S)).digest()
+#K = hash_class(srp.long_to_bytes(S)).digest()
+K = generate_K(S)
 M = srp.calculate_M(hash_class, N, g, I, s, A, B, K)
 ############################################################################
 sck.send(X.PasswordPacket_(M, A))
@@ -131,3 +150,6 @@ sck.recv(1024)  # REALM_AUTH_NO_MATCH...:(
 sck.send("\x10\x00\x00\x00\x00")
 print sck.recv(1024)
 # x.RecvedData(sck.recv(1024))
+
+
+
