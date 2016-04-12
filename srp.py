@@ -73,15 +73,15 @@ class Srp:
             s_bytes = self.S.blittle()
         except AttributeError:
             raise ValueError("You need to generate S first.\nYou can do this calling gen_S()")
-        # Hash the odd bytes of S (session key)
+        # Hash the even bytes of S (session key)
         hash_object = hashlib.sha1(s_bytes[::2])
-        odd_hashed = hash_object.digest()
-        # Hash the even bytes of S
-        hash_object = hashlib.sha1(s_bytes[1::2])
         even_hashed = hash_object.digest()
+        # Hash the odd bytes of S
+        hash_object = hashlib.sha1(s_bytes[1::2])
+        odd_hashed = hash_object.digest()
         K = ""
         # Create K as alternate string concatenation
-        for o, e in zip(odd_hashed, even_hashed):
+        for o, e in zip(even_hashed, odd_hashed):
             K += o + e  # K = odd[0],even[0],odd[1],..
         self.K = Endian(K)
         return self.K
