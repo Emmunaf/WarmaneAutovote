@@ -8,7 +8,7 @@ import hashlib
 try:
     import _srp as srp
 except:
-    print "Need py_srp"
+    print("Need py_srp")
     exit(1)
 
 
@@ -23,6 +23,7 @@ def generate_K(S):
     hash_object = hashlib.sha1(s_bytes[1::2])
     even_hashed = hash_object.digest()
     K = ""
+    # Create K as alternate string concatenation
     for o, e in zip(odd_hashed, even_hashed):
         K += o + e  # K = odd[0],even[0],odd[1],..
 
@@ -89,6 +90,7 @@ class Mpacket:
                 print "SRP N :" + self.hex_print(srp_vals[2]) + " " + str(len(srp_vals[2]))
                 print "SRP s :" + self.hex_print(srp_vals[3]) + " " + str(len(srp_vals[3]))
                 print "CRC :" + self.hex_print(srp_vals[4]) + " " + str(len(srp_vals[4]))
+                print srp_vals
                 return srp_vals
             if opcode == p[2]:
                 print "We got it!"
@@ -100,7 +102,7 @@ X = Mpacket()
 host = "54.213.244.47"
 port = 3724
 
-# Login data
+# Login data (alexlorens, lolloasd) is a testing account
 user = "alexlorens".upper()
 password = "lolloasd".upper()
 
@@ -114,18 +116,30 @@ SRP_ARRAY = X.decode_packet(sck.recv(1024))  # Read SRP value for sending Logon 
 ############################################################################
 g = srp.bytes_to_long(SRP_ARRAY[1])
 N = srp.bytes_to_long(SRP_ARRAY[2])
-hash_class = srp._hash_map[srp.SHA1]
+hash_class = srp._hash_map[srp.SHA1]  # Using sha1 hashing for everything except K (Sha1-Interleaved)
 k = 3  # SRP-6
 I = user
 p = password
+# Generate A
 a = srp.get_random(32)
 A = srp.reverse(pow(srp.reverse(g), srp.reverse(a), srp.reverse(N)))  # Big endian
+#
+## PRINT TEST1
+print("Calcolo A")
+print ('a:', a)
+print ('g:', SRP_ARRAY[1])
+print ('N:', SRP_ARRAY[2])
+print ('A:', A)
+##END PRINT TEST 1
 v = None
 M = None
 K = None
 H_AMK = None
 s = srp.bytes_to_long(SRP_ARRAY[3])
 B = srp.bytes_to_long(SRP_ARRAY[0])
+#print('B: ->', B)
+#print('B: [bytes_to_long] ->',srp.bytes_to_long(SRP_ARRAY[0]))
+#print('B: [reversed, used for calc] ->',srp.reverse(B))
 if (B % N) == 0:
     print "Error"
 u = srp.H(hash_class, A, B)
@@ -133,7 +147,33 @@ x = srp.gen_x(hash_class, s, I, p)  #
 v = srp.reverse(pow(srp.reverse(g), srp.reverse(x), srp.reverse(N)))  # Big endian
 S = srp.reverse(pow((srp.reverse(B) - srp.reverse(k) * srp.reverse(v)),
                     srp.reverse(a) + srp.reverse(u) * srp.reverse(x), srp.reverse(N)))  # Big endian
+## PRINT TEST3
+print "--------------####-----------------------"
+print("Valori utili")
+print ('N:', SRP_ARRAY[2])
+print ('g:', SRP_ARRAY[1])
+print ('I:', I)
+print ('p:', p)
+print ('s:', SRP_ARRAY[3])
+print ('B:', SRP_ARRAY[0])
+print ('[a]:', srp.long_to_bytes(a))
+
+
+print "---------------####----------------------"
+##END PRINT TEST 3
+
+## PRINT TEST2
+print "----------------------------------------"
+print("Calcolo u, x, S")
+print ('u:', u)
+print ('x:', x)
+print ('v:', v)
+print ('S:', S)
+print "----------------------------------------"
+##END PRINT TEST 2
+
 K = generate_K(S)
+print ('K:', K)
 M = srp.calculate_M(hash_class, N, g, I, s, A, B, K)
 ############################################################################
 sck.send(X.alproof_packet(M, A))
