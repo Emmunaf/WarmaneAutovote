@@ -175,6 +175,8 @@ print "----------------------------------------"
 K = generate_K(S)
 print ('K:', K)
 M = srp.calculate_M(hash_class, N, g, I, s, A, B, K)
+print ('K:', M)
+
 ############################################################################
 sck.send(X.alproof_packet(M, A))
 sck.recv(1024)  # REALM_AUTH_NO_MATCH...:(

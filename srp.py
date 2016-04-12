@@ -85,8 +85,28 @@ class Srp:
         # Create K as alternate string concatenation
         for o, e in zip(odd_hashed, even_hashed):
             K += o + e  # K = odd[0],even[0],odd[1],..
+        self.K = Endian(K)
+        return self.K
+    
+    def gen_M(self):
+        """Generate M (client side)"""
 
-        return Endian(K)
+        hN = hashlib.sha1(self.N.blittle()).digest()
+        hg = hashlib.sha1(self.g.blittle()).digest()
+        hN_xor_hg = ''.join(chr(ord(hN[i]) ^ ord(hg[i])) for i in range(0,len(hN)))
+        try: 
+            hash_object = hashlib.sha1(hN_xor_hg)
+            hash_object.update(hashlib.sha1(self.I).digest())
+            hash_object.update(self.s.b_little)
+            hash_object.update(self.A.b_little)
+            hash_object.update(self.B.b_little)
+            hash_object.update(self.K.b_little)
+        except AttributeError:
+            raise ValueError("You need to call gen_K() first!")
+
+        self.M = Endian(hash_object.digest())
+        return self.M
+
 
     @staticmethod
     def int_to_bytes(n):
@@ -108,7 +128,7 @@ def test():
     I = 'ALEXLORENS'
     p = 'LOLLOASD'
     s = '\xa9zOJ|\xed\xd3\x7f8\xcd\x97]\x02\x13OOU\xa3^\xb4a\xfeF\xd4\xf8\x1e\x06\x9ax\xd9Y\x9b'
-    B = '\xe2\x12L<\x800\xe5\xd5V>\xd5\xed\x87M\xde\xf6\x16r\xb5!H\r\x94F\x89\x8aGW\x03\xeb\xa9\x85'
+    B = '4\xd6#\x9dc\xa9\xda\xd1\xc8s\xce\\\xad2`,]\xc0\xb8W\xd5\xb2}\xdcdU8\xd0 \x87\x83E'
     # a  fissato, ricorda di togliere
     # You need to modify _a_ to do tests
     tests = Srp(N, g, I, p, s, B, k=3)
@@ -120,6 +140,7 @@ def test():
     print("S:", S.ilittle())
     K = tests.gen_K()
     print("K:", K.blittle())
-
+    M = tests.gen_M()
+    print("M", M.b_little)
 
 #test()
