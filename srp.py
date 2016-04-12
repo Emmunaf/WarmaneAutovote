@@ -4,15 +4,14 @@ from endian import Endian
 
 
 class Srp:
-    """A class for using an edited SRP6, created to work with WoW Logon system.
-        
-        """
+    """A class for using an edited SRP6, created to work with WoW Logon system."""
 
     def __init__(self, N, g, I, p, s, B, k=3):
         """Initialize the class
-            """
+        """
 
         # N,g,s,B should be in bytestring format ("\x01\x10\x03")
+        self.a = Endian(os.urandom(32))  # Used to calculate A
         self.N = Endian(N)  # N is a safe prime, sended by server (all op. are mod N)
         self.g = Endian(g)  # g is a generator of the multiplicative group
         self.I = I  # Username
@@ -29,7 +28,6 @@ class Srp:
             A is the  Public ephemeral value (client generated)
         """
 
-        self.a = Endian(os.urandom(32))  # Used to calculate A
         A = pow(self.g.ibig(), self.a.ibig(), self.N.ibig())  # A is Big Endian
         self.A = Endian(self.int_to_bytes(A)[::-1])  # self.A is converted to Endian(little_end)
         return self.A
@@ -87,14 +85,14 @@ class Srp:
             K += o + e  # K = odd[0],even[0],odd[1],..
         self.K = Endian(K)
         return self.K
-    
+
     def gen_M(self):
         """Generate M (client side)"""
 
         hN = hashlib.sha1(self.N.blittle()).digest()
         hg = hashlib.sha1(self.g.blittle()).digest()
-        hN_xor_hg = ''.join(chr(ord(hN[i]) ^ ord(hg[i])) for i in range(0,len(hN)))
-        try: 
+        hN_xor_hg = ''.join(chr(ord(hN[i]) ^ ord(hg[i])) for i in range(0, len(hN)))
+        try:
             hash_object = hashlib.sha1(hN_xor_hg)
             hash_object.update(hashlib.sha1(self.I).digest())
             hash_object.update(self.s.b_little)
@@ -107,7 +105,6 @@ class Srp:
         self.M = Endian(hash_object.digest())
         return self.M
 
-
     @staticmethod
     def int_to_bytes(n):
         l = []
@@ -116,31 +113,7 @@ class Srp:
         while x != n:
             b = (n >> off) & 0xFF
             l.append(chr(b))
-            x = x | (b << off)
+            x |= b << off
             off += 8
         l.reverse()
         return ''.join(l)
-
-
-def test():
-    N = '\xb7\x9b>*\x87\x82<\xab\x8f^\xbf\xbf\x8e\xb1\x01\x08SP\x06)\x8b[\xad\xbd[S\xe1\x89^dK\x89'
-    g = '\x07'
-    I = 'ALEXLORENS'
-    p = 'LOLLOASD'
-    s = '\xa9zOJ|\xed\xd3\x7f8\xcd\x97]\x02\x13OOU\xa3^\xb4a\xfeF\xd4\xf8\x1e\x06\x9ax\xd9Y\x9b'
-    B = '4\xd6#\x9dc\xa9\xda\xd1\xc8s\xce\\\xad2`,]\xc0\xb8W\xd5\xb2}\xdcdU8\xd0 \x87\x83E'
-    # a  fissato, ricorda di togliere
-    # You need to modify _a_ to do tests
-    tests = Srp(N, g, I, p, s, B, k=3)
-    A = tests.gen_A()
-    u = tests.gen_u()
-    S = tests.gen_S()
-    print("A:", A.ilittle())
-    print("u:", u.ilittle())
-    print("S:", S.ilittle())
-    K = tests.gen_K()
-    print("K:", K.blittle())
-    M = tests.gen_M()
-    print("M", M.b_little)
-
-#test()
