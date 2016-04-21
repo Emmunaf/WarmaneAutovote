@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """wrsp.py: A class for automatize WoW (3.3.5) login using sockets and a variation of SRP6.
 
-    Really thanks to Glusk for the great help
+    Thanks to Glusk for the great help
               and to karadipola for a draft script
 """
 
@@ -144,9 +144,8 @@ class Wrsp:
 '''# Server data
 host = "54.213.244.47"
 port = 3724  
-# Login data (alexlorens, lolloasd) is a testing account
-user = "alexlorens"
-password = "lolloasd"
+user = "user"
+password = "pass"
 mypacket = Wrsp(user, password, host)
 print mypacket.login()
 print mypacket.show_realm()'''

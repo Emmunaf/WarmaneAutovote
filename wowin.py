@@ -79,8 +79,6 @@ def autovote(username, password):
         print "Now you have: ",
         print hilite(vote_response.json()['messages'].get('points'), True)  # Red
         print " votepoints"
-    # points()
-    return 0
 
 def main():
     # Server data
