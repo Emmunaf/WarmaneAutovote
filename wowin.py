@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """wowin.py: A client for automatize WoW (3.3.5) login using sockets and a variation of SRP6.
+It is be able to autovote too.
+Edit accounts.txt file in the following format to use this script:
+
+username:password
+username2:password2
 """
 
 from wrsp import Wrsp
@@ -87,27 +92,37 @@ def autovote(username, password):
     # points()
     return 0
 
-# Server data
-host = "54.213.244.47"
-port = 3724
-# Get login data from file
-f = file("accounts.txt", 'r')
-for line in f.readlines():
-    user, password = line.rstrip().split(":")
-    mypacket = Wrsp(user, password, host)
-    if mypacket.login():
-        print hilite("User: " + user + " logged in-game succesfully!", True)
-        mypacket.show_realm()
-        # Open Login page to vote easily
-        autovote(user, password)
+def main():
+    # Server data
+    host = "54.213.244.47"
+    port = 3724
+    # Get login data from file
+    f = file("accounts.txt", 'r')
+    for line in f.readlines():
+        user, password = line.rstrip().split(":")
+        mypacket = Wrsp(user, password, host)
+        if mypacket.login():
+            print hilite("User: " + user + " logged in-game succesfully!", True)
+            mypacket.show_realm()
+            # Open Login page to vote easily
+            autovote(user, password)
 
-    else:
-        print "Login failed for: " + user
+        else:
+            print "Login failed for: " + user
+            
+    print "Fine votazione del giorno:", str(datetime.date.today())    
+    # user = "alexlorens"
+    # password = "lolloasd"
+    # mypacket = Wrsp(user, password, host)
+    # print mypacket.login()
+    # print mypacket.show_realm()
 
-# user = "alexlorens"
-# password = "lolloasd"
-# mypacket = Wrsp(user, password, host)
-# print mypacket.login()
-# print mypacket.show_realm()
-
+from apscheduler.schedulers.blocking import BlockingScheduler
+scheduler = BlockingScheduler()
+scheduler.add_job(main, 'interval', seconds=50, hours=24)
+print('Press Ctrl+C to exit')
+try:
+    scheduler.start()
+except (KeyboardInterrupt, SystemExit):
+    pass
 
