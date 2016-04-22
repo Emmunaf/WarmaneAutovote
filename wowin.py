@@ -12,6 +12,8 @@ Requirements:
     pip install bs4
     pip install schedule
 """
+
+import time
 import schedule
 import datetime
 from wrsp import Wrsp
