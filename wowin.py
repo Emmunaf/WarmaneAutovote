@@ -1,21 +1,29 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""wowin.py: A client for automatize WoW (3.3.5) login using sockets and a variation of SRP6.
+"""wowin.py: A client for automatize WoW (3.3.5) login
+                using sockets and a variation of SRP6.
 It is be able to autovote too.
 Edit accounts.txt file in the following format to use this script:
 
 username:password
 username2:password2
+
+Requirements:
+    pip install funcsigs
+    pip install futures    
+    pip install apscheduler
+    pip install bs4
 """
 
+import datetime
 from wrsp import Wrsp
 import sys
-import webbrowser
 import requests
-from BeautifulSoup import BeautifulSoup  # A wonderful module for HTML/XML parsing
-import json
+from BeautifulSoup import BeautifulSoup  # A wonderful module for HTML parsing
+# import json
 
-def hilite(string, status = False, bold = False):
+
+def hilite(string, status=False, bold=False):
     """If tty highligth the output."""
 
     if not sys.stdout.isatty():
@@ -29,9 +37,10 @@ def hilite(string, status = False, bold = False):
         attr.append('1')
     return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
+
 def autovote(username, password):
     """Starts the autovote."""
-    
+
     url_0 = 'http://www.warmane.com/account/login'
     url = 'http://www.warmane.com/account'
     # Start a new session, to preserve the cookie
@@ -40,7 +49,7 @@ def autovote(username, password):
     # Take session and anti-csrf Token
     t = s.get(url)
     soup = BeautifulSoup(t.text)
-    # <meta name="csrf-token" content="ZGRiNzQ3MWE2NWI5NTc5MDQ1M2E5ZjgzYTRhMjNhZjQ=">
+    # <meta name="csrf-token" content="ZGRi...hZjQ=">
     token = soup.find("meta", {"name": "csrf-token"})['content']
     # The login POST payload
     login_payload = {
@@ -77,33 +86,34 @@ def autovote(username, password):
         print hilite(vote_response.json()['messages']['error'][0])
     else:
         print "Now you have: ",
-        print hilite(vote_response.json()['messages'].get('points'), True)  # Red
+        print hilite(vote_response.json()['messages'].get('points'), True)
         print " votepoints"
+
 
 def main():
     # Server data
     host = "54.213.244.47"
-    port = 3724
+    # port = 3724
     # Get login data from file
     f = file("accounts.txt", 'r')
     for line in f.readlines():
         user, password = line.rstrip().split(":")
         mypacket = Wrsp(user, password, host)
         if mypacket.login():
-            print hilite("User: " + user + " logged in-game succesfully!", True)
+            print hilite("User " + user + " logged in-game succesfully!", True)
             mypacket.show_realm()
             # Open Login page to vote easily
             autovote(user, password)
         else:
             print "Login failed for: " + user
-            
-    print "End of daily vote:", str(datetime.date.today())    
+
+    print "End of daily vote:", str(datetime.date.today())
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 scheduler = BlockingScheduler()
 scheduler.add_job(main, 'interval', seconds=50, hours=24)
 try:
+    main()
     scheduler.start()  # CTRL+C to exit
 except (KeyboardInterrupt, SystemExit):
     pass
-
