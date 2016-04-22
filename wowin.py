@@ -82,7 +82,7 @@ def autovote(username, password):
     }
     l_response = s.post(url_0, data=login_payload, headers=login_headers)
     vote_response = s.post(url, data=vote_payload, headers=vote_headers)
-    if vote_response.json()['messages']['error']:
+    if vote_response.json()['messages'].has_key('error'):
         print hilite("Error:", False, True)  # Bold
         print hilite(vote_response.json()['messages']['error'][0])
     else:
