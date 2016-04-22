@@ -9,10 +9,8 @@ username:password
 username2:password2
 
 Requirements:
-    pip install funcsigs
-    pip install futures    
-    pip install apscheduler
     pip install bs4
+    pip install schedule
 """
 
 import datetime
@@ -109,11 +107,8 @@ def main():
 
     print "End of daily vote:", str(datetime.date.today())
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-scheduler = BlockingScheduler()
-scheduler.add_job(main, 'interval', seconds=50, hours=24)
-try:
-    main()
-    scheduler.start()  # CTRL+C to exit
-except (KeyboardInterrupt, SystemExit):
-    pass
+main()
+schedule.every().day.at("03:00").do(main, 'Autovoting...')
+while True:
+    schedule.run_pending()
+    time.sleep(60)  # Wait one minute
