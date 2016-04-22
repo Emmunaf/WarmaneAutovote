@@ -13,6 +13,7 @@ Requirements:
     pip install schedule
 """
 
+import socket
 import time
 import schedule
 import datetime
@@ -92,13 +93,13 @@ def autovote(username, password):
 
 def main():
     # Server data
-    host = "54.213.244.47"
+    host = "logon.warmane.ru"
     # port = 3724
     # Get login data from file
     f = file("accounts.txt", 'r')
     for line in f.readlines():
         user, password = line.rstrip().split(":")
-        mypacket = Wrsp(user, password, host)
+        mypacket = Wrsp(user, password, socket.gethostbyname(host))
         if mypacket.login():
             print hilite("User " + user + " logged in-game succesfully!", True)
             mypacket.show_realm()
