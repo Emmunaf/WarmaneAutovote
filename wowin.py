@@ -87,7 +87,7 @@ def autovote(username, password):
         print hilite(vote_response.json()['messages']['error'][0])
     else:
         print "Now you have: ",
-        print hilite(vote_response.json()['messages'].get('points'), True)
+        print hilite(vote_response.json().get('points')[0], True)
         print " votepoints"
 
 
