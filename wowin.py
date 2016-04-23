@@ -80,34 +80,41 @@ def autovote(username, password):
         'Referer': url,
         'Accept-Encoding': 'gzip, deflate'
     }
-    l_response = s.post(url_0, data=login_payload, headers=login_headers)
-    vote_response = s.post(url, data=vote_payload, headers=vote_headers)
-    if vote_response.json()['messages'].has_key('error'):
-        print hilite("Error:", False, True)  # Bold
-        print hilite(vote_response.json()['messages']['error'][0])
-    else:
-        print "Now you have: ",
-        print hilite(vote_response.json().get('points')[0], True)
-        print " votepoints"
-
+    try:
+        l_response = s.post(url_0, data=login_payload, headers=login_headers)
+        vote_response = s.post(url, data=vote_payload, headers=vote_headers)
+        if vote_response.json()['messages'].has_key('error'):
+            print hilite("Error:", False, True)  # Bold
+            # Show the site-returned error
+            print hilite(vote_response.json()['messages']['error'][0])
+        else:
+            print "Now you have: ",
+            print hilite(vote_response.json().get('points')[0], True)
+            print " votepoints"
+    except Exception:
+        print hilite("Login failed for " + username)
+        
 
 def main():
     # Server data
     host = "logon.warmane.ru"
+    n_of_trying = 3
     # port = 3724
     # Get login data from file
     f = file("accounts.txt", 'r')
     for line in f.readlines():
         user, password = line.rstrip().split(":")
+        # Connect to WoW server to emulate ingame-login!
         mypacket = Wrsp(user, password, socket.gethostbyname(host))
-        if mypacket.login():
-            print hilite("User " + user + " logged in-game succesfully!", True)
-            mypacket.show_realm()
-            # Open Login page to vote easily
-            autovote(user, password)
-        else:
-            print "Login failed for: " + user
-
+        for i in range(n_of_trying):  # Trying to connect to server more than oncs
+            if mypacket.login():
+                print hilite("User " + user + " logged in-game succesfully!", True)
+                mypacket.show_realm()
+                break
+            else:
+                print "Login failed for: " + user
+        # Autovote also if ingame login failed. Just try (user was on on the last 24h?)
+        autovote(user, password)
     print "End of daily vote:", str(datetime.date.today())
 
 main()
