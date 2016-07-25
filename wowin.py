@@ -89,7 +89,7 @@ def autovote(username, password):
             print hilite(vote_response.json()['messages']['error'][0])
         else:
             print "Now you have: ",
-            print hilite(vote_response.json().get('points')[0], True)
+            print hilite(vote_response.json().get('points')[0], True),
             print " votepoints"
     except Exception:
         print hilite("Login failed for " + username)
@@ -121,4 +121,4 @@ main()
 schedule.every().day.at("03:00").do(main, 'Autovoting...')
 while True:
     schedule.run_pending()
-    time.sleep(60)  # Wait one minute
+    time.sleep(20)  # Wait one minute
