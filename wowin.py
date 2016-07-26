@@ -93,7 +93,7 @@ def autovote(username, password):
             print " votepoints"
     except Exception:
         print hilite("Login failed for " + username)
-        
+
 
 def main():
     # Server data
@@ -118,7 +118,8 @@ def main():
     print "End of daily vote:", str(datetime.date.today())
 
 main()
-schedule.every().day.at("03:00").do(main, 'Autovoting...')
+schedule.every().day.at("03:00").do(main)
+#schedule.every(1).minute.do(main)
 while True:
     schedule.run_pending()
     time.sleep(20)  # Wait one minute
